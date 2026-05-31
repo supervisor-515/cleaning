@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청소 임무 배정 시스템</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13130d;
+    --panel:#1c1c14;
+    --panel2:#23231a;
+    --border:#34342a;
+    --border2:#45453a;
+    --text:#ece7d8;
+    --muted:#9a9381;
+    --amber:#d6a328;
+    --amber-dim:#7a6420;
+    --green:#8aa04f;
+    --duty:#5e90ac;      /* 근무열외 */
+    --leave:#cd7a55;     /* 휴가·외출 열외 */
+    --ok:#9ec45f;
+    --danger:#c14a36;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(214,163,40,.07), transparent 60%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.012) 0 2px, transparent 2px 9px),
+      var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    font-weight:400;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .mono{font-family:'Space Mono', monospace;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{
+    border:1px solid var(--border);
+    background:linear-gradient(180deg, var(--panel2), var(--panel));
+    border-radius:4px;
+    padding:22px 24px;
+    position:relative;
+    overflow:hidden;
+  }
+  header.top::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+    background:repeating-linear-gradient(45deg,var(--amber) 0 8px,#11110b 8px 16px);
+  }
+  header.top h1{
+    margin:0;font-size:26px;font-weight:700;letter-spacing:-.5px;padding-left:8px;
+  }
+  header.top .sub{
+    color:var(--muted);font-size:13px;margin-top:4px;padding-left:8px;
+    font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:2px;
+  }
+
+  .panel{
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:4px;
+    margin-top:20px;
+  }
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px 12px;flex-wrap:wrap;
+    padding:14px 18px;border-bottom:1px solid var(--border);
+    background:var(--panel2);
+  }
+  .panel-head h2{
+    margin:0;font-size:15px;font-weight:600;letter-spacing:.3px;
+    display:flex;align-items:center;gap:9px;
+  }
+  .tag{
+    font-family:'Space Mono',monospace;font-size:10px;color:var(--bg);
+    background:var(--amber);padding:2px 7px;border-radius:2px;font-weight:700;
+    letter-spacing:1px;
+  }
+  .panel-body{padding:18px;}
+
+  /* buttons */
+  button{
+    font-family:'IBM Plex Sans KR',sans-serif;cursor:pointer;border-radius:3px;
+    border:1px solid var(--border2);background:var(--panel2);color:var(--text);
+    padding:9px 16px;font-size:14px;font-weight:500;transition:.13s;
+  }
+  button:hover{border-color:var(--amber);color:var(--amber);}
+  button.primary{
+    background:var(--amber);color:#1a1505;border-color:var(--amber);font-weight:700;
+  }
+  button.primary:hover{background:#e7b536;color:#1a1505;}
+  button.ghost{background:transparent;}
+  button.danger{border-color:#5a2d24;color:var(--leave);}
+  button.danger:hover{background:#3a201a;border-color:var(--danger);color:#fff;}
+  button.sm{padding:5px 11px;font-size:12.5px;}
+
+  input[type=text],input[type=date],select{
+    font-family:'IBM Plex Sans KR',sans-serif;background:#0f0f0a;color:var(--text);
+    border:1px solid var(--border2);border-radius:3px;padding:8px 10px;font-size:14px;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--amber);}
+
+  /* member rows */
+  .member-row{
+    display:flex;align-items:center;gap:10px;padding:8px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .member-row:last-child{border-bottom:none;}
+  .member-row .idx{
+    font-family:'Space Mono',monospace;color:var(--amber-dim);width:26px;flex-shrink:0;font-size:13px;
+  }
+  .member-row input[type=text]{flex:1;min-width:0;}
+  .member-row button{flex-shrink:0;}
+
+  /* roster grid */
+  .roster-head{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;
+  }
+  .field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:1px;margin-bottom:4px;font-family:'Space Mono',monospace;}
+
+  .rtable{width:100%;border-collapse:collapse;}
+  .rtable th,.rtable td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
+  .rtable th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace;font-weight:400;}
+  .seg{display:inline-flex;border:1px solid var(--border2);border-radius:4px;overflow:hidden;}
+  .seg button{
+    border:none;border-radius:0;padding:6px 11px;font-size:12.5px;background:#0f0f0a;color:var(--muted);
+    border-right:1px solid var(--border);
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button:hover{color:var(--text);}
+  .seg button.on-avail{background:var(--green);color:#10140a;font-weight:700;}
+  .seg button.on-duty{background:var(--duty);color:#08161c;font-weight:700;}
+  .seg button.on-leave{background:var(--leave);color:#1c0f08;font-weight:700;}
+
+  /* assignment preview */
+  .assign-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+  .task-card{
+    border:1px solid var(--border2);border-radius:5px;background:var(--panel2);
+    padding:14px 15px;position:relative;
+  }
+  .task-card .ttl{font-size:13px;color:var(--muted);letter-spacing:.5px;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+  .task-card .ico{width:9px;height:9px;border-radius:2px;background:var(--amber);display:inline-block;}
+  .task-card select{width:100%;font-size:15px;font-weight:600;}
+  .task-card .why{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;}
+  .dbl-badge{position:absolute;top:10px;right:10px;font-size:9px;background:var(--danger);color:#fff;
+    padding:2px 6px;border-radius:2px;font-family:'Space Mono',monospace;letter-spacing:.5px;}
+
+  .exempt-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .chip{font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);}
+  .chip.duty{border-color:var(--duty);color:var(--duty);}
+  .chip.leave{border-color:var(--leave);color:var(--leave);}
+  .chip b{font-weight:700;}
+
+  .notice{padding:10px 13px;border-radius:4px;font-size:13px;margin-bottom:14px;}
+  .notice.warn{background:#3a2410;border:1px solid #6b4416;color:#e8b35a;}
+  .notice.info{background:#15221f;border:1px solid #2c4a42;color:#7fc4ad;}
+
+  /* stats table */
+  .stats{width:100%;border-collapse:collapse;font-size:14px;}
+  .stats th,.stats td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:center;}
+  .stats th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace;font-weight:400;}
+  .stats td.name{text-align:left;font-weight:600;}
+  .stats .num{font-family:'Space Mono',monospace;}
+  .stats .ratio{color:var(--amber);}
+  .bar{height:5px;background:#0f0f0a;border-radius:3px;overflow:hidden;margin-top:4px;}
+  .bar > i{display:block;height:100%;background:var(--amber);}
+
+  /* history */
+  .hist-item{border:1px solid var(--border);border-radius:4px;margin-bottom:10px;background:var(--panel2);}
+  .hist-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;}
+  .hist-head .date{font-family:'Space Mono',monospace;font-size:14px;color:var(--amber);flex-shrink:0;}
+  .hist-head .mini{flex:1;display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:flex-end;}
+  .kv{font-size:13px;color:var(--text);white-space:nowrap;}
+  .kv em{font-style:normal;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;}
+  .hist-head button{flex-shrink:0;}
+  .hist-body{padding:0 14px 12px;font-size:13px;display:none;}
+  .hist-body.open{display:block;}
+  .hist-body .line{padding:5px 0;border-top:1px solid var(--border);display:flex;gap:8px;}
+  .hist-body .line .lbl{color:var(--muted);min-width:96px;}
+  .empty{color:var(--muted);text-align:center;padding:24px;font-size:13.5px;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;}
+  .footnote{color:var(--muted);font-size:12px;line-height:1.7;margin-top:8px;}
+  .footnote code{background:#0f0f0a;padding:1px 5px;border-radius:3px;color:var(--amber);font-family:'Space Mono',monospace;}
+  details.help summary{cursor:pointer;color:var(--amber);font-size:13px;padding:6px 0;}
+  .row-flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+  .sync-badge{
+    position:absolute;top:16px;right:18px;font-family:'Space Mono',monospace;
+    font-size:11px;letter-spacing:.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);
+  }
+  .sync-local{color:var(--muted);}
+  .sync-pending,.sync-saving{color:var(--amber);border-color:var(--amber-dim);}
+  .sync-saved{color:var(--ok);border-color:#3c5226;}
+  .sync-error{color:var(--leave);border-color:#5a2d24;}
+  .gh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+  .gh-grid .field input{width:100%;}
+  .gh-status{font-size:12.5px;font-family:'Space Mono',monospace;}
+  .gh-status.ok{color:var(--ok);} .gh-status.err{color:var(--leave);} .gh-status.busy{color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>청소 임무 배정 시스템</h1>
+    <div class="sub">Cleaning Duty Rotation · Fair-Share</div>
+    <div id="syncBadge" class="sync-badge sync-local">● 로컬</div>
+  </header>
+
+  <!-- GitHub 연동 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="tag">00</span> GitHub 저장소 연동</h2>
+      <button class="sm ghost" id="ghToggle">설정 펼치기</button>
+    </div>
+    <div class="panel-body" id="ghBody" style="display:none;">
+      <div class="gh-grid">
+        <div class="field"><label>Owner (사용자/조직)</label><input type="text" id="ghOwner" placeholder="예: seungsu"></div>
+        <div class="field"><label>Repository</label><input type="text" id="ghRepo" placeholder="예: cleaning-roster"></div>
+        <div class="field"><label>Branch</label><input type="text" id="ghBranch" placeholder="main"></div>
+        <div class="field"><label>데이터 파일 경로</label><input type="text" id="ghPath" placeholder="data/roster.json"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Personal Access Token (repo 쓰기 권한)</label><input type="password" id="ghToken" placeholder="github_pat_... 또는 ghp_..." autocomplete="off"></div>
+      </div>
+      <div class="row-flex" style="margin-top:14px;">
+        <button class="primary" id="ghConnect">연결 &amp; 불러오기</button>
+        <button class="ghost" id="ghPushNow">지금 저장</button>
+        <span id="ghStatus" class="gh-status"></span>
+      </div>
+      <p class="footnote" style="margin-top:14px;">
+        · 입력한 정보는 <b>이 브라우저에만</b> 저장되고 저장소에는 올라가지 않습니다(토큰 포함).<br>
+        · 토큰은 <b>Fine-grained token</b>으로 해당 저장소의 <b>Contents: Read and write</b> 권한만 부여하길 권장합니다.<br>
+        · 변경이 생기면 약 0.7초 뒤 <code>경로</code>의 JSON 파일로 <b>자동 커밋</b>됩니다. (동작마다 커밋이 쌓입니다)<br>
+        · 데이터가 민감하면 저장소를 <b>private</b>으로 두세요.
+      </p>
+    </div>
+  </section>
+
+  <!-- 인원 관리 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="tag">01</span> 인원 관리</h2>
+      <button class="sm ghost" id="addMember">+ 인원 추가</button>
+    </div>
+    <div class="panel-body">
+      <div id="memberList"></div>
+    </div>
+  </section>
+
+  <!-- 오늘 배정 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="tag">02</span> 일일 배정</h2>
+    </div>
+    <div class="panel-body">
+      <div class="roster-head">
+        <div class="field">
+          <label>날짜</label>
+          <input type="date" id="rosterDate">
+        </div>
+        <div class="field" style="flex:1;"></div>
+        <button class="primary" id="assignBtn">⚙ 자동 배정</button>
+      </div>
+
+      <table class="rtable">
+        <thead><tr><th style="width:40%">인원</th><th>상태</th></tr></thead>
+        <tbody id="rosterBody"></tbody>
+      </table>
+
+      <div id="previewWrap" style="margin-top:18px;"></div>
+    </div>
+  </section>
+
+  <!-- 누적 통계 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="tag">03</span> 누적 현황</h2>
+      <span class="mini" style="color:var(--muted);font-size:12px;" id="totalDays"></span>
+    </div>
+    <div class="panel-body" style="overflow-x:auto;">
+      <table class="stats">
+        <thead>
+          <tr>
+            <th class="name" style="text-align:left">인원</th>
+            <th>전체일수</th>
+            <th>쓰레기통</th>
+            <th>청소기질</th>
+            <th>물걸레질</th>
+            <th>총 수행</th>
+            <th>수행률</th>
+          </tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+      <p class="footnote">
+        · <b>전체일수</b> = 근무가능 + 근무열외 일수 (휴가·외출 열외는 제외)<br>
+        · <b>수행률</b> = 총 수행 ÷ 전체일수. 배정은 <b>전체 수행률(1순위)</b>이 낮은 사람을 먼저 고르고, 같으면 <b>과제별 수행률(2순위)</b>로 정합니다.<br>
+        · 이름 옆 표시 — <span style="color:var(--duty)">·근무</span>: 근무열외 일수 · <span style="color:var(--leave)">·휴가</span>: 휴가·외출 일수 · <span style="color:var(--muted)">·미배정</span>: 근무가능이었지만 청소 배정에서 빠진 일수.
+      </p>
+    </div>
+  </section>
+
+  <!-- 이력 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="tag">04</span> 배정 이력</h2>
+      <div class="toolbar">
+        <button class="sm ghost" id="exportBtn">내보내기(JSON)</button>
+        <button class="sm ghost" id="importBtn">불러오기</button>
+        <button class="sm danger" id="resetBtn">전체 초기화</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <details class="help">
+    <summary>배정 규칙 설명 보기</summary>
+    <p class="footnote">
+      1. 매일 인원별 상태를 <b>근무가능 / 근무열외(당직·상황병) / 휴가·외출 열외</b> 중 하나로 지정합니다.<br>
+      2. 과제는 <code>쓰레기통 비우기 · 청소기질 · 물걸레질</code> 3개이며, <b>근무가능 인원</b>에게만 배정됩니다.<br>
+      3. 각 과제는 <b>전체 수행률이 가장 낮은</b> 근무가능 인원에게 우선 배정되고, 전체 수행률이 같으면 <b>해당 과제 수행률이 낮은 사람</b>, 그것도 같으면 <b>무작위</b>로 정합니다(1순위 전체 · 2순위 과제별 · 동점 랜덤).<br>
+      4. 열외 2명 이하(근무가능 3명 이상) → <b>1인 1과제</b>. 열외 3명 이상(근무가능 2명 이하) → 일부 인원이 <b>2개 이상</b> 수행합니다.<br>
+      5. 근무열외는 전체일수에 <b>포함</b>되어 향후 더 배정받게 되고, 휴가·외출 열외는 전체일수에 <b>미포함</b>되어 불이익이 없습니다.<br>
+      6. 자동 배정 후 각 과제의 담당자를 직접 바꿀 수 있으며, <b>확정 저장</b>을 눌러야 이력·통계에 반영됩니다.
+    </p>
+  </details>
+
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+</div>
+
+<script>
+const TASKS = ["쓰레기통 비우기","청소기질","물걸레질"];
+const TASK_SHORT = {"쓰레기통 비우기":"쓰레기통","청소기질":"청소기","물걸레질":"물걸레"};
+const STATUS = {AVAIL:"available", DUTY:"duty", LEAVE:"leave"};
+
+let state = {
+  members: [
+    {id:"m0", name:"인원 1"},
+    {id:"m1", name:"인원 2"},
+    {id:"m2", name:"인원 3"},
+    {id:"m3", name:"인원 4"},
+    {id:"m4", name:"인원 5"},
+  ],
+  history: []   // {id, date, statuses:{id:status}, assignments:{task:memberId|null}}
+};
+let draft = { statuses:{}, assignment:null }; // working day before save
+
+/* ---------- persistence: GitHub Contents API (primary) + localStorage (backup/config) ---------- */
+let gh = { owner:"", repo:"", branch:"main", path:"data/roster.json", token:"", sha:null };
+let pushTimer=null, saving=false, pendingSave=false;
+
+function ghReady(){ return !!(gh.owner && gh.repo && gh.token); }
+function ghContentsURL(){
+  const p = gh.path.replace(/^\/+/,'');
+  return `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${p}`;
+}
+function ghHeaders(){
+  return { 'Authorization':`Bearer ${gh.token}`, 'Accept':'application/vnd.github+json',
+           'X-GitHub-Api-Version':'2022-11-28', 'Content-Type':'application/json' };
+}
+function utf8ToB64(str){
+  const bytes=new TextEncoder().encode(str); let bin=''; const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){ bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+chunk)); }
+  return btoa(bin);
+}
+function b64ToUtf8(b64){
+  const bin=atob(b64.replace(/\s/g,'')); const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function setSync(kind, msg){
+  const b=document.getElementById('syncBadge'); if(!b) return;
+  b.className='sync-badge sync-'+kind;
+  b.textContent = {local:'● 로컬', pending:'● 대기', saving:'● 저장 중…', saved:'● 동기화됨', error:'● 오류'}[kind] || '●';
+  if(msg) b.title=msg;
+}
+
+/* config persistence (browser only) */
+function saveGhConfig(){
+  try{ localStorage.setItem('cleaning_gh_cfg', JSON.stringify({owner:gh.owner,repo:gh.repo,branch:gh.branch,path:gh.path,token:gh.token})); }catch(e){}
+}
+function loadGhConfig(){
+  try{
+    const c=JSON.parse(localStorage.getItem('cleaning_gh_cfg')||'null');
+    if(c){ gh.owner=c.owner||''; gh.repo=c.repo||''; gh.branch=c.branch||'main'; gh.path=c.path||'data/roster.json'; gh.token=c.token||''; }
+  }catch(e){}
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+  set('ghOwner',gh.owner); set('ghRepo',gh.repo); set('ghBranch',gh.branch||'main'); set('ghPath',gh.path||'data/roster.json'); set('ghToken',gh.token);
+}
+function localBackup(){ try{ localStorage.setItem('cleaning_state_v1', JSON.stringify(state)); }catch(e){} }
+function loadLocalState(){
+  try{ const s=JSON.parse(localStorage.getItem('cleaning_state_v1')||'null'); if(s&&s.members) state=s; }catch(e){}
+}
+
+/* load remote state from GitHub */
+async function ghLoad(){
+  const res=await fetch(ghContentsURL()+`?ref=${encodeURIComponent(gh.branch||'main')}&t=${Date.now()}`,
+                       {headers:ghHeaders(), cache:'no-store'});
+  if(res.status===404){ gh.sha=null; return false; }     // 파일 아직 없음 → 첫 저장 때 생성
+  if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t.slice(0,120)}`); }
+  const j=await res.json(); gh.sha=j.sha;
+  const s=JSON.parse(b64ToUtf8(j.content));
+  if(s && s.members) state=s;
+  return true;
+}
+/* write current state to GitHub (with one sha-refresh retry on conflict) */
+async function ghPut(){
+  for(let attempt=0; attempt<2; attempt++){
+    const body={ message:`청소 배정 업데이트 ${new Date().toISOString()}`,
+                 content:utf8ToB64(JSON.stringify(state,null,2)), branch:gh.branch||'main' };
+    if(gh.sha) body.sha=gh.sha;
+    const res=await fetch(ghContentsURL(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
+    if(res.ok){ const j=await res.json(); gh.sha=j.content.sha; return; }
+    if((res.status===409||res.status===422) && attempt===0){
+      const g=await fetch(ghContentsURL()+`?ref=${encodeURIComponent(gh.branch||'main')}`,{headers:ghHeaders(),cache:'no-store'});
+      if(g.ok){ gh.sha=(await g.json()).sha; continue; }
+    }
+    const t=await res.text(); throw new Error(`${res.status} ${t.slice(0,140)}`);
+  }
+}
+async function pushToGitHub(){
+  if(!ghReady()) return;
+  if(saving){ pendingSave=true; return; }
+  saving=true;
+  do{
+    pendingSave=false; setSync('saving');
+    try{ await ghPut(); setSync('saved'); }
+    catch(err){ setSync('error', err.message); break; }
+  } while(pendingSave);
+  saving=false;
+}
+
+/* called after every state change */
+function persist(){
+  localBackup();
+  if(!ghReady()){ setSync('local'); return; }
+  setSync('pending');
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(pushToGitHub, 700);   // 동작들을 모아 약 0.7초 뒤 1회 커밋
+}
+
+/* ---------- stats ---------- */
+function computeStats(){
+  const st = {};
+  state.members.forEach(m=>{
+    st[m.id] = {eligible:0, leave:0, duty:0, idle:0, tasks:{}, total:0};
+    TASKS.forEach(t=> st[m.id].tasks[t]=0);
+  });
+  state.history.forEach(day=>{
+    const assignedIds = new Set(Object.values(day.assignments).filter(Boolean));
+    state.members.forEach(m=>{
+      const s = day.statuses[m.id];
+      if(s===STATUS.LEAVE){ if(st[m.id]) st[m.id].leave++; return; } // not eligible
+      if(s===STATUS.AVAIL || s===STATUS.DUTY){
+        if(!st[m.id]) return;
+        st[m.id].eligible++;
+        if(s===STATUS.DUTY) st[m.id].duty++;
+        if(s===STATUS.AVAIL && !assignedIds.has(m.id)) st[m.id].idle++; // 근무가능했지만 배정 안 됨
+      }
+    });
+    TASKS.forEach(t=>{
+      const mid = day.assignments[t];
+      if(mid && st[mid]){ st[mid].tasks[t]++; st[mid].total++; }
+    });
+  });
+  return st;
+}
+
+/* ---------- assignment algorithm ---------- */
+function assignTasks(statuses){
+  const st = computeStats();
+  const available = state.members.filter(m=> statuses[m.id]===STATUS.AVAIL);
+  const assignment = {}; TASKS.forEach(t=> assignment[t]=null);
+  const reasons = {};
+  if(available.length===0){
+    return {assignment, available, reasons, note:"근무가능 인원이 없어 배정할 수 없습니다."};
+  }
+  const load = {}; available.forEach(m=> load[m.id]=0);
+  const elig = (mid)=> (st[mid]?st[mid].eligible:0) + 1;           // +1: 오늘 포함
+  const overallRate = (mid)=> (st[mid]?st[mid].total:0) / elig(mid);        // 전체 수행률 (1순위)
+  const taskRate    = (mid, task)=> (st[mid]?st[mid].tasks[task]:0) / elig(mid); // 과제별 수행률 (2순위)
+  const shuffle = (arr)=>{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
+  TASKS.forEach(task=>{
+    const sorted = shuffle([...available]).sort((a,b)=>{   // 먼저 섞고 → 안정 정렬: 동점은 랜덤 순서 유지
+      if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];      // 오늘 적게 맡은 사람 우선
+      const oa=overallRate(a.id), ob=overallRate(b.id);
+      if(Math.abs(oa-ob)>1e-9) return oa-ob;                         // 1순위: 전체 수행률 낮은 사람
+      const ra=taskRate(a.id,task), rb=taskRate(b.id,task);
+      if(Math.abs(ra-rb)>1e-9) return ra-rb;                         // 2순위: 해당 과제 수행률 낮은 사람
+      return 0;                                                      // 동점 → 랜덤
+    });
+    const chosen = sorted[0];
+    assignment[task] = chosen.id;
+    reasons[task] = `전체 ${(overallRate(chosen.id)*100).toFixed(0)}% → 과제 ${(taskRate(chosen.id,task)*100).toFixed(0)}%`;
+    load[chosen.id]++;
+  });
+  const doubles = Object.values(load).filter(v=>v>=2).length;
+  let note=null;
+  if(available.length<=2) note = `근무가능 ${available.length}명 — 일부 인원이 2개 이상의 과제를 수행합니다.`;
+  return {assignment, available, reasons, note, load};
+}
+
+/* ---------- rendering ---------- */
+function nameOf(id){ const m=state.members.find(x=>x.id===id); return m?m.name:"(삭제됨)"; }
+
+function renderMembers(){
+  const box = document.getElementById('memberList');
+  box.innerHTML='';
+  state.members.forEach((m,i)=>{
+    const row=document.createElement('div'); row.className='member-row';
+    row.innerHTML=`<span class="idx mono">${String(i+1).padStart(2,'0')}</span>`;
+    const inp=document.createElement('input'); inp.type='text'; inp.value=m.name;
+    inp.addEventListener('input',e=>{ m.name=e.target.value; persist(); renderRoster(); renderStats(); renderHistory(); });
+    const del=document.createElement('button'); del.className='sm danger'; del.textContent='삭제';
+    del.addEventListener('click',()=>{
+      if(state.members.length<=1) return;
+      if(!confirm(`'${m.name}'을(를) 인원에서 삭제할까요? (과거 이력은 유지됩니다)`)) return;
+      state.members=state.members.filter(x=>x.id!==m.id);
+      persist(); renderAll();
+    });
+    row.appendChild(inp); row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+function renderRoster(){
+  const body=document.getElementById('rosterBody');
+  body.innerHTML='';
+  state.members.forEach(m=>{
+    if(!(m.id in draft.statuses)) draft.statuses[m.id]=STATUS.AVAIL;
+    const tr=document.createElement('tr');
+    const tdN=document.createElement('td'); tdN.style.fontWeight='600'; tdN.textContent=m.name;
+    const tdS=document.createElement('td');
+    const seg=document.createElement('div'); seg.className='seg';
+    const opts=[
+      {v:STATUS.AVAIL,label:'근무가능',cls:'on-avail'},
+      {v:STATUS.DUTY,label:'근무열외',cls:'on-duty'},
+      {v:STATUS.LEAVE,label:'휴가·외출',cls:'on-leave'},
+    ];
+    opts.forEach(o=>{
+      const b=document.createElement('button'); b.textContent=o.label;
+      if(draft.statuses[m.id]===o.v) b.classList.add(o.cls);
+      b.addEventListener('click',()=>{ draft.statuses[m.id]=o.v; draft.assignment=null; renderRoster(); renderPreview(); });
+      seg.appendChild(b);
+    });
+    tdS.appendChild(seg); tr.appendChild(tdN); tr.appendChild(tdS);
+    body.appendChild(tr);
+  });
+}
+
+function renderPreview(){
+  const wrap=document.getElementById('previewWrap');
+  if(!draft.assignment){ wrap.innerHTML=''; return; }
+  const {assignment, available, reasons, note, load} = draft.assignment;
+
+  // exempt chips
+  const duty = state.members.filter(m=>draft.statuses[m.id]===STATUS.DUTY);
+  const leave = state.members.filter(m=>draft.statuses[m.id]===STATUS.LEAVE);
+  let chips='<div class="exempt-summary">';
+  chips+=`<span class="chip"><b>근무가능</b> ${available.length}명</span>`;
+  if(duty.length) chips+=`<span class="chip duty"><b>근무열외</b> ${duty.map(m=>m.name).join(', ')}</span>`;
+  if(leave.length) chips+=`<span class="chip leave"><b>휴가·외출</b> ${leave.map(m=>m.name).join(', ')}</span>`;
+  chips+='</div>';
+
+  let noticeHtml='';
+  if(note){
+    const cls = available.length===0 ? 'warn' : 'info';
+    noticeHtml=`<div class="notice ${cls}">${available.length===0?'⚠ ':'ℹ '}${note}</div>`;
+  }
+
+  let cards='<div class="assign-grid">';
+  TASKS.forEach(t=>{
+    const cur=assignment[t];
+    const isDouble = cur && load && load[cur]>=2;
+    const opts = available.map(m=>`<option value="${m.id}" ${m.id===cur?'selected':''}>${m.name}</option>`).join('');
+    cards+=`<div class="task-card">
+      ${isDouble?'<span class="dbl-badge">2개 이상</span>':''}
+      <div class="ttl"><span class="ico"></span>${t}</div>
+      ${available.length? `<select data-task="${t}">${opts}</select>
+        <div class="why">${reasons[t]||''}</div>` : '<div class="why">배정 불가</div>'}
+    </div>`;
+  });
+  cards+='</div>';
+
+  const saveBtn = available.length? `<div style="margin-top:16px;" class="row-flex">
+      <button class="primary" id="confirmBtn">✓ 확정 저장</button>
+      <button class="ghost" id="cancelBtn">취소</button>
+    </div>`:'';
+
+  wrap.innerHTML = chips + noticeHtml + cards + saveBtn;
+
+  wrap.querySelectorAll('select[data-task]').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      const t=e.target.getAttribute('data-task');
+      draft.assignment.assignment[t]=e.target.value;
+      // recompute load + double badges
+      const load2={}; available.forEach(m=>load2[m.id]=0);
+      TASKS.forEach(tk=>{ const mid=draft.assignment.assignment[tk]; if(mid in load2) load2[mid]++; });
+      draft.assignment.load=load2;
+      renderPreview();
+    });
+  });
+  const cb=document.getElementById('confirmBtn');
+  if(cb) cb.addEventListener('click',saveDay);
+  const cc=document.getElementById('cancelBtn');
+  if(cc) cc.addEventListener('click',()=>{ draft.assignment=null; renderPreview(); });
+}
+
+function saveDay(){
+  const date=document.getElementById('rosterDate').value || new Date().toISOString().slice(0,10);
+  const statuses={}; state.members.forEach(m=> statuses[m.id]=draft.statuses[m.id]||STATUS.AVAIL);
+  const assignments={}; TASKS.forEach(t=> assignments[t]=draft.assignment.assignment[t]||null);
+  state.history.push({ id:Date.now(), date, statuses, assignments });
+  state.history.sort((a,b)=> a.date<b.date?1:-1);
+  draft.assignment=null;
+  persist(); renderAll();
+}
+
+function renderStats(){
+  const st=computeStats();
+  const body=document.getElementById('statsBody');
+  body.innerHTML='';
+  const maxRatio = Math.max(0.0001, ...state.members.map(m=> st[m.id].eligible? st[m.id].total/st[m.id].eligible : 0));
+  state.members.forEach(m=>{
+    const s=st[m.id];
+    const rate = s.eligible? s.total/s.eligible : 0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="name">${m.name}${s.duty?` <span style="color:var(--duty);font-size:11px">·근무${s.duty}</span>`:''}${s.leave?` <span style="color:var(--leave);font-size:11px">·휴가${s.leave}</span>`:''}${s.idle?` <span style="color:var(--muted);font-size:11px">·미배정${s.idle}</span>`:''}</td>
+      <td class="num">${s.eligible}</td>
+      <td class="num">${s.tasks[TASKS[0]]}</td>
+      <td class="num">${s.tasks[TASKS[1]]}</td>
+      <td class="num">${s.tasks[TASKS[2]]}</td>
+      <td class="num">${s.total}</td>
+      <td class="num ratio">${(rate*100).toFixed(0)}%
+        <div class="bar"><i style="width:${Math.min(100,(rate/maxRatio)*100)}%"></i></div></td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById('totalDays').textContent = `누적 ${state.history.length}일 기록됨`;
+}
+
+function renderHistory(){
+  const box=document.getElementById('historyList');
+  if(!state.history.length){ box.innerHTML='<div class="empty">아직 저장된 배정 이력이 없습니다.</div>'; return; }
+  box.innerHTML='';
+  state.history.forEach(day=>{
+    const item=document.createElement('div'); item.className='hist-item';
+    const head=document.createElement('div'); head.className='hist-head';
+    const summary=TASKS.map(t=>{
+      const who = day.assignments[t]?nameOf(day.assignments[t]):'미배정';
+      return `<span class="kv"><em>${TASK_SHORT[t]}</em> ${who}</span>`;
+    }).join('');
+    head.innerHTML=`<span class="date">${day.date}</span>
+      <span class="mini">${summary}</span>`;
+    const del=document.createElement('button'); del.className='sm danger'; del.textContent='삭제';
+    del.addEventListener('click',(e)=>{ e.stopPropagation();
+      if(!confirm(`${day.date} 기록을 삭제할까요?`)) return;
+      state.history=state.history.filter(h=>h.id!==day.id); persist(); renderAll();
+    });
+    head.appendChild(del);
+    const bodyEl=document.createElement('div'); bodyEl.className='hist-body';
+    let inner='';
+    const dayLoad={};
+    TASKS.forEach(t=>{ const mid=day.assignments[t]; if(mid) dayLoad[mid]=(dayLoad[mid]||0)+1; });
+    TASKS.forEach(t=>{
+      const mid=day.assignments[t];
+      const who = mid?nameOf(mid):'미배정';
+      const dbl = (mid && dayLoad[mid]>=2) ? ' <span style="color:var(--danger);font-size:11px">·2개 담당</span>' : '';
+      inner+=`<div class="line"><span class="lbl">${t}</span><span><b>${who}</b>${dbl}</span></div>`;
+    });
+    const dutyN=state.members.filter(m=>day.statuses[m.id]===STATUS.DUTY).map(m=>nameOf(m.id));
+    const leaveN=state.members.filter(m=>day.statuses[m.id]===STATUS.LEAVE).map(m=>nameOf(m.id));
+    const idleN=state.members.filter(m=>day.statuses[m.id]===STATUS.AVAIL && !Object.values(day.assignments).includes(m.id)).map(m=>nameOf(m.id));
+    inner+=`<div class="line"><span class="lbl" style="color:var(--duty)">근무열외</span><span>${dutyN.length?dutyN.join(', '):'없음'}</span></div>`;
+    inner+=`<div class="line"><span class="lbl" style="color:var(--leave)">휴가·외출</span><span>${leaveN.length?leaveN.join(', '):'없음'}</span></div>`;
+    if(idleN.length) inner+=`<div class="line"><span class="lbl">미배정(가능)</span><span>${idleN.join(', ')}</span></div>`;
+    bodyEl.innerHTML=inner;
+    head.addEventListener('click',()=> bodyEl.classList.toggle('open'));
+    item.appendChild(head); item.appendChild(bodyEl);
+    box.appendChild(item);
+  });
+}
+
+function renderAll(){ renderMembers(); renderRoster(); renderPreview(); renderStats(); renderHistory(); }
+
+/* ---------- GitHub settings UI ---------- */
+document.getElementById('ghToggle').addEventListener('click',()=>{
+  const body=document.getElementById('ghBody');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  document.getElementById('ghToggle').textContent=open?'설정 펼치기':'설정 접기';
+});
+function readGhInputs(){
+  gh.owner=document.getElementById('ghOwner').value.trim();
+  gh.repo=document.getElementById('ghRepo').value.trim();
+  gh.branch=document.getElementById('ghBranch').value.trim()||'main';
+  gh.path=document.getElementById('ghPath').value.trim()||'data/roster.json';
+  gh.token=document.getElementById('ghToken').value.trim();
+}
+function ghStatusMsg(text, cls){ const el=document.getElementById('ghStatus'); el.className='gh-status '+(cls||''); el.textContent=text; }
+
+document.getElementById('ghConnect').addEventListener('click', async ()=>{
+  readGhInputs();
+  if(!ghReady()){ ghStatusMsg('Owner · Repository · Token을 모두 입력하세요.','err'); return; }
+  saveGhConfig();
+  ghStatusMsg('불러오는 중…','busy'); setSync('saving');
+  try{
+    const existed=await ghLoad();
+    ghStatusMsg(existed?'불러오기 완료 — 저장소와 연결됨':'연결됨 — 저장소에 파일이 없어 첫 저장 시 생성됩니다.','ok');
+    setSync('saved'); renderAll();
+    if(!existed) persist(); // 파일 생성
+  }catch(err){ ghStatusMsg('실패: '+err.message,'err'); setSync('error',err.message); }
+});
+document.getElementById('ghPushNow').addEventListener('click', async ()=>{
+  readGhInputs();
+  if(!ghReady()){ ghStatusMsg('Owner · Repository · Token을 모두 입력하세요.','err'); return; }
+  saveGhConfig(); clearTimeout(pushTimer);
+  ghStatusMsg('저장 중…','busy'); await pushToGitHub();
+  ghStatusMsg(saving?'대기 중':'저장 완료','ok');
+});
+
+/* ---------- events ---------- */
+document.getElementById('assignBtn').addEventListener('click',()=>{
+  draft.assignment = assignTasks(draft.statuses);
+  renderPreview();
+  document.getElementById('previewWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+document.getElementById('addMember').addEventListener('click',()=>{
+  const id='m'+Date.now();
+  state.members.push({id,name:'인원 '+(state.members.length+1)});
+  persist(); renderAll();
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!confirm('모든 인원·이력·통계를 초기화할까요? 되돌릴 수 없습니다.')) return;
+  state={members:[{id:"m0",name:"인원 1"},{id:"m1",name:"인원 2"},{id:"m2",name:"인원 3"},{id:"m3",name:"인원 4"},{id:"m4",name:"인원 5"}],history:[]};
+  draft={statuses:{},assignment:null};
+  persist(); renderAll();
+});
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cleaning_roster_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+});
+document.getElementById('importBtn').addEventListener('click',()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const s=JSON.parse(rd.result); if(s.members){ state=s; draft={statuses:{},assignment:null}; persist(); renderAll(); } }catch(err){ alert('불러오기 실패: 올바른 JSON 파일이 아닙니다.'); } };
+  rd.readAsText(f);
+});
+
+/* ---------- init ---------- */
+(async ()=>{
+  loadGhConfig();
+  loadLocalState();
+  document.getElementById('rosterDate').value=new Date().toISOString().slice(0,10);
+  if(ghReady()){
+    setSync('saving');
+    try{ await ghLoad(); setSync('saved'); }
+    catch(err){ setSync('error', err.message); }
+  } else { setSync('local'); }
+  renderAll();
+})();
+</script>
+</body>
+</html>
