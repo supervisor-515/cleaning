@@ -21,5 +21,22 @@
       "name": "이병 송승제"
     }
   ],
-  "history": []
+  "history": [
+    {
+      "id": 1780236810977,
+      "date": "2026-05-30",
+      "statuses": {
+        "m0": "available",
+        "m1": "duty",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m0",
+        "청소기질": "m3",
+        "물걸레질": "m2"
+      }
+    }
+  ]
 }
