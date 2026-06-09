@@ -23,23 +23,7 @@
   ],
   "history": [
     {
-      "id": 1781024816376,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m3",
-        "청소기질": "m1",
-        "물걸레질": "m0"
-      }
-    },
-    {
-      "id": 1781024814106,
+      "id": 1781024829820,
       "date": "2026-06-09",
       "statuses": {
         "m0": "available",
@@ -50,76 +34,12 @@
       },
       "assignments": {
         "쓰레기통 비우기": "m4",
-        "청소기질": "m3",
-        "물걸레질": "m1"
-      }
-    },
-    {
-      "id": 1781024809563,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m2",
-        "청소기질": "m3",
-        "물걸레질": "m4"
-      }
-    },
-    {
-      "id": 1781024800058,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m0",
-        "청소기질": "m2",
-        "물걸레질": "m4"
-      }
-    },
-    {
-      "id": 1781024790006,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m0",
-        "청소기질": "m1",
-        "물걸레질": "m2"
-      }
-    },
-    {
-      "id": 1781001007688,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "duty",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m1",
         "청소기질": "m2",
         "물걸레질": "m3"
       }
     },
     {
-      "id": 1781024796677,
+      "id": 1781024815430,
       "date": "2026-06-09",
       "statuses": {
         "m0": "available",
@@ -129,25 +49,9 @@
         "m4": "available"
       },
       "assignments": {
-        "쓰레기통 비우기": "m3",
+        "쓰레기통 비우기": "m0",
         "청소기질": "m4",
-        "물걸레질": "m1"
-      }
-    },
-    {
-      "id": 1781024803681,
-      "date": "2026-06-09",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m3",
-        "청소기질": "m1",
-        "물걸레질": "m0"
+        "물걸레질": "m2"
       }
     },
     {
@@ -167,7 +71,55 @@
       }
     },
     {
-      "id": 1781024815430,
+      "id": 1781024803681,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m3",
+        "청소기질": "m1",
+        "물걸레질": "m0"
+      }
+    },
+    {
+      "id": 1781024796677,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m3",
+        "청소기질": "m4",
+        "물걸레질": "m1"
+      }
+    },
+    {
+      "id": 1781001007688,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "duty",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m1",
+        "청소기질": "m2",
+        "물걸레질": "m3"
+      }
+    },
+    {
+      "id": 1781024790006,
       "date": "2026-06-09",
       "statuses": {
         "m0": "available",
@@ -178,8 +130,72 @@
       },
       "assignments": {
         "쓰레기통 비우기": "m0",
-        "청소기질": "m4",
+        "청소기질": "m1",
         "물걸레질": "m2"
+      }
+    },
+    {
+      "id": 1781024800058,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m0",
+        "청소기질": "m2",
+        "물걸레질": "m4"
+      }
+    },
+    {
+      "id": 1781024809563,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m2",
+        "청소기질": "m3",
+        "물걸레질": "m4"
+      }
+    },
+    {
+      "id": 1781024814106,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m4",
+        "청소기질": "m3",
+        "물걸레질": "m1"
+      }
+    },
+    {
+      "id": 1781024816376,
+      "date": "2026-06-09",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m3",
+        "청소기질": "m1",
+        "물걸레질": "m0"
       }
     },
     {
