@@ -300,7 +300,7 @@
       </table>
       <p class="footnote">
         · <b>전체일수</b> = 근무가능 + 근무열외 일수 (휴가·외출 열외는 제외)<br>
-        · <b>수행률</b> = 총 수행 ÷ 전체일수. 배정은 <b>해당 과제 수행률(1순위)</b>이 낮은 사람을 먼저 고르고(인당 쓰레기통·청소기·물걸레를 33/33/33로 맞춤), 같으면 <b>전체 수행률(2순위)</b>로 정합니다.<br>
+        · <b>수행률</b> = 총 수행 ÷ 전체일수. 배정은 ①먼저 <b>전체 수행률이 낮은 사람부터</b> 오늘 일할 인원을 뽑고, ②그 인원들 사이에서 <b>각자 과제별 수행률이 고르도록</b> 누가 어떤 과제를 할지 정합니다(인당 쓰레기통·청소기·물걸레 33/33/33).<br>
         · 이름 옆 표시 — <span style="color:var(--duty)">·근무</span>: 근무열외 일수 · <span style="color:var(--leave)">·휴가</span>: 휴가·외출 일수 · <span style="color:var(--muted)">·미배정</span>: 근무가능이었지만 청소 배정에서 빠진 일수.
       </p>
     </div>
@@ -326,7 +326,7 @@
     <p class="footnote">
       1. 매일 인원별 상태를 <b>근무가능 / 근무열외(당직·상황병) / 휴가·외출 열외</b> 중 하나로 지정합니다.<br>
       2. 과제는 <code>쓰레기통 비우기 · 청소기질 · 물걸레질</code> 3개이며, <b>근무가능 인원</b>에게만 배정됩니다.<br>
-      3. 각 과제는 <b>해당 과제 수행률이 가장 낮은</b> 근무가능 인원에게 우선 배정되어 인당 쓰레기통·청소기·물걸레가 고르게(33/33/33) 분산되고, 같으면 <b>전체 수행률이 낮은 사람</b>, 그것도 같으면 <b>무작위</b>로 정합니다(1순위 과제별 · 2순위 전체 · 동점 랜덤).<br>
+      3. 배정은 2단계입니다. <b>(1단계)</b> <b>전체 수행률이 낮은 근무가능 인원부터</b> 오늘 일할 사람을 과제 수만큼 뽑습니다(동점은 무작위). <b>(2단계)</b> 뽑힌 사람들 사이에서 <b>각자 과제별 수행률이 가장 고르게</b> 되도록 누가 쓰레기통·청소기·물걸레를 맡을지 정합니다 → 인당 33/33/33로 분산.<br>
       4. 열외 2명 이하(근무가능 3명 이상) → <b>1인 1과제</b>. 열외 3명 이상(근무가능 2명 이하) → 일부 인원이 <b>2개 이상</b> 수행합니다.<br>
       5. 근무열외는 전체일수에 <b>포함</b>되어 향후 더 배정받게 되고, 휴가·외출 열외는 전체일수에 <b>미포함</b>되어 불이익이 없습니다.<br>
       6. 자동 배정 후 각 과제의 담당자를 직접 바꿀 수 있으며, <b>확정 저장</b>을 눌러야 이력·통계에 반영됩니다.
@@ -483,26 +483,40 @@ function assignTasks(statuses){
   if(available.length===0){
     return {assignment, available, reasons, note:"근무가능 인원이 없어 배정할 수 없습니다."};
   }
-  const load = {}; available.forEach(m=> load[m.id]=0);
   const elig = (mid)=> (st[mid]?st[mid].eligible:0) + 1;           // +1: 오늘 포함
-  const taskRate    = (mid, task)=> (st[mid]?st[mid].tasks[task]:0) / elig(mid); // 과제별 수행률 (1순위)
-  const overallRate = (mid)=> (st[mid]?st[mid].total:0) / elig(mid);        // 전체 수행률 (2순위)
+  const overallRate = (mid)=> (st[mid]?st[mid].total:0) / elig(mid);          // 전체 수행률
+  const taskRate    = (mid, task)=> (st[mid]?st[mid].tasks[task]:0) / elig(mid); // 과제별 수행률
   const shuffle = (arr)=>{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
-  TASKS.forEach(task=>{
-    const sorted = shuffle([...available]).sort((a,b)=>{   // 먼저 섞고 → 안정 정렬: 동점은 랜덤 순서 유지
-      if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];      // 오늘 적게 맡은 사람 우선
-      const ra=taskRate(a.id,task), rb=taskRate(b.id,task);
-      if(Math.abs(ra-rb)>1e-9) return ra-rb;                         // 1순위: 해당 과제 수행률 낮은 사람 (인당 33/33/33 균형)
+
+  // ── 1단계: 오늘 일할 사람(슬롯) 선정 — 전체 수행률이 낮은 사람부터 (과제 종류와 무관) ──
+  // 근무가능 ≥ 과제 수면 서로 다른 3명, 적으면 일부가 2개 이상 맡도록 같은 사람이 슬롯에 중복됨.
+  const load = {}; available.forEach(m=> load[m.id]=0);
+  const slots = [];
+  TASKS.forEach(()=>{
+    const pick = shuffle([...available]).sort((a,b)=>{       // 먼저 섞고 → 안정 정렬: 동점은 랜덤
+      if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];      // 한 명에게 몰리지 않게: 적게 맡은 사람 먼저
       const oa=overallRate(a.id), ob=overallRate(b.id);
-      if(Math.abs(oa-ob)>1e-9) return oa-ob;                         // 2순위: 전체 수행률 낮은 사람
+      if(Math.abs(oa-ob)>1e-9) return oa-ob;                         // 전체 수행률 낮은 사람 먼저
       return 0;                                                      // 동점 → 랜덤
-    });
-    const chosen = sorted[0];
-    assignment[task] = chosen.id;
-    reasons[task] = `과제 ${(taskRate(chosen.id,task)*100).toFixed(0)}% → 전체 ${(overallRate(chosen.id)*100).toFixed(0)}%`;
-    load[chosen.id]++;
+    })[0];
+    slots.push(pick.id); load[pick.id]++;
   });
-  const doubles = Object.values(load).filter(v=>v>=2).length;
+
+  // ── 2단계: 선정된 사람들에게 과제 배정 — 각자 쓰레기통·청소기·물걸레가 고르도록(33/33/33) ──
+  // 과제↔슬롯의 모든 대응(최대 3!=6가지)을 비교해 "과제별 수행률 합"이 최소가 되는 배치 선택.
+  const perms = (arr)=> arr.length<=1 ? [arr]
+    : arr.flatMap((x,i)=> perms(arr.slice(0,i).concat(arr.slice(i+1))).map(p=>[x,...p]));
+  let best=null, bestCost=Infinity;
+  perms(TASKS.slice()).forEach(order=>{
+    let cost=0; order.forEach((task,i)=> cost += taskRate(slots[i], task));
+    if(cost < bestCost - 1e-9){ bestCost=cost; best=order; }
+  });
+  best.forEach((task,i)=>{ assignment[task]=slots[i]; });
+  TASKS.forEach(task=>{
+    const mid=assignment[task];
+    reasons[task] = `과제 ${(taskRate(mid,task)*100).toFixed(0)}% · 전체 ${(overallRate(mid)*100).toFixed(0)}%`;
+  });
+
   let note=null;
   if(available.length<=2) note = `근무가능 ${available.length}명 — 일부 인원이 2개 이상의 과제를 수행합니다.`;
   return {assignment, available, reasons, note, load};
