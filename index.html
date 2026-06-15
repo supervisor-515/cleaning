@@ -2,8 +2,19 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>청소 임무 배정 시스템</title>
+<!-- PWA: 웹앱 설치 지원 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#13130d">
+<meta name="description" content="부대 청소 임무 배정 및 인원 관리 시스템">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="청소배정">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -770,6 +781,13 @@ document.getElementById('importFile').addEventListener('change',e=>{
   rd.onload=()=>{ try{ const s=JSON.parse(rd.result); if(s.members){ state=s; draft={statuses:{},assignment:null}; persist(); renderAll(); } }catch(err){ alert('불러오기 실패: 올바른 JSON 파일이 아닙니다.'); } };
   rd.readAsText(f);
 });
+
+/* ---------- service worker (PWA 설치/오프라인) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW 등록 실패:',err));
+  });
+}
 
 /* ---------- init ---------- */
 (async ()=>{
