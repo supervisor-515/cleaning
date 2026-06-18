@@ -23,6 +23,22 @@
   ],
   "history": [
     {
+      "id": 1781775683765,
+      "date": "2026-06-18",
+      "statuses": {
+        "m0": "available",
+        "m1": "available",
+        "m2": "available",
+        "m3": "available",
+        "m4": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m3",
+        "청소기질": "m1",
+        "물걸레질": "m2"
+      }
+    },
+    {
       "id": 1781661289608,
       "date": "2026-06-17",
       "statuses": {
