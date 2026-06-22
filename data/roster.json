@@ -23,38 +23,6 @@
   ],
   "history": [
     {
-      "id": 1782128534766,
-      "date": "2026-06-22",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m4",
-        "청소기질": "m1",
-        "물걸레질": "m2"
-      }
-    },
-    {
-      "id": 1782127709700,
-      "date": "2026-06-22",
-      "statuses": {
-        "m0": "available",
-        "m1": "available",
-        "m2": "available",
-        "m3": "available",
-        "m4": "available"
-      },
-      "assignments": {
-        "쓰레기통 비우기": "m2",
-        "청소기질": "m1",
-        "물걸레질": "m4"
-      }
-    },
-    {
       "id": 1782128526679,
       "date": "2026-06-22",
       "statuses": {
