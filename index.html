@@ -311,7 +311,7 @@
       </table>
       <p class="footnote">
         · <b>전체일수</b> = 근무가능 + 근무열외 일수 (휴가·외출 열외는 제외)<br>
-        · <b>수행률</b> = 총 수행 ÷ 전체일수. 배정은 ①먼저 <b>전체 수행률이 낮은 사람부터</b> 오늘 일할 인원을 뽑고, ②그 인원들 사이에서 <b>각자 과제별 수행률이 고르도록</b> 누가 어떤 과제를 할지 정합니다(인당 쓰레기통·청소기·물걸레 33/33/33).<br>
+        · <b>수행률</b> = 총 수행 ÷ 전체일수. 배정은 ①먼저 <b>전체 수행률이 낮은 사람부터</b> 오늘 일할 인원을 뽑되, 수행률이 낮은 사람은 한 과제를 맡아도 여전히 남들보다 낮으면 <b>혼자 두세 개까지</b> 맡고, ②그 인원들 사이에서 <b>각자 과제별 수행률이 고르도록</b> 누가 어떤 과제를 할지 정합니다.<br>
         · 이름 옆 표시 — <span style="color:var(--duty)">·근무</span>: 근무열외 일수 · <span style="color:var(--leave)">·휴가</span>: 휴가·외출 일수 · <span style="color:var(--muted)">·미배정</span>: 근무가능이었지만 청소 배정에서 빠진 일수.
       </p>
     </div>
@@ -337,8 +337,8 @@
     <p class="footnote">
       1. 매일 인원별 상태를 <b>근무가능 / 근무열외(당직·상황병) / 휴가·외출 열외</b> 중 하나로 지정합니다.<br>
       2. 과제는 <code>쓰레기통 비우기 · 청소기질 · 물걸레질</code> 3개이며, <b>근무가능 인원</b>에게만 배정됩니다.<br>
-      3. 배정은 2단계입니다. <b>(1단계)</b> <b>전체 수행률이 낮은 근무가능 인원부터</b> 오늘 일할 사람을 과제 수만큼 뽑습니다(동점은 무작위). <b>(2단계)</b> 뽑힌 사람들 사이에서 <b>각자 과제별 수행률이 가장 고르게</b> 되도록 누가 쓰레기통·청소기·물걸레를 맡을지 정합니다 → 인당 33/33/33로 분산.<br>
-      4. 열외 2명 이하(근무가능 3명 이상) → <b>1인 1과제</b>. 열외 3명 이상(근무가능 2명 이하) → 일부 인원이 <b>2개 이상</b> 수행합니다.<br>
+      3. 배정은 2단계입니다. <b>(1단계)</b> 과제를 하나씩 배정할 때마다 <b>오늘 맡은 몫까지 더한 예상 수행률</b>을 다시 계산해, <b>가장 낮은 사람부터</b> 과제 수만큼 뽑습니다(동점은 무작위). <b>(2단계)</b> 뽑힌 사람들 사이에서 <b>각자 과제별 수행률이 가장 고르게</b> 되도록 누가 쓰레기통·청소기·물걸레를 맡을지 정합니다.<br>
+      4. 수행률이 낮은 사람은 한 과제를 맡아도 예상 수행률이 여전히 남들보다 낮으면 <b>두 개</b>, 그래도 낮으면 <b>세 개까지 혼자</b> 맡습니다. 근무가능 인원이 과제 수(3)보다 적어도 마찬가지로 일부가 여러 과제를 수행합니다.<br>
       5. 근무열외는 전체일수에 <b>포함</b>되어 향후 더 배정받게 되고, 휴가·외출 열외는 전체일수에 <b>미포함</b>되어 불이익이 없습니다.<br>
       6. 자동 배정 후 각 과제의 담당자를 직접 바꿀 수 있으며, <b>확정 저장</b>을 눌러야 이력·통계에 반영됩니다.
     </p>
@@ -499,15 +499,16 @@ function assignTasks(statuses){
   const taskRate    = (mid, task)=> (st[mid]?st[mid].tasks[task]:0) / elig(mid); // 과제별 수행률
   const shuffle = (arr)=>{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
 
-  // ── 1단계: 오늘 일할 사람(슬롯) 선정 — 전체 수행률이 낮은 사람부터 (과제 종류와 무관) ──
-  // 근무가능 ≥ 과제 수면 서로 다른 3명, 적으면 일부가 2개 이상 맡도록 같은 사람이 슬롯에 중복됨.
+  // ── 1단계: 오늘 일할 사람(슬롯) 선정 — 오늘 몫까지 포함해도 수행률이 낮은 사람부터 ──
+  // 과제 하나를 줄 때마다 그 사람의 예상 수행률을 다시 계산한다. 수행률이 낮은 사람은
+  // 한 개를 맡은 뒤에도 여전히 남들보다 낮으면 두 개, 그래도 낮으면 세 개까지 혼자 맡는다.
   const load = {}; available.forEach(m=> load[m.id]=0);
+  const projRate = (mid)=> ((st[mid]?st[mid].total:0) + load[mid]) / elig(mid); // 오늘 배정분 포함 예상 수행률
   const slots = [];
   TASKS.forEach(()=>{
     const pick = shuffle([...available]).sort((a,b)=>{       // 먼저 섞고 → 안정 정렬: 동점은 랜덤
-      if(load[a.id]!==load[b.id]) return load[a.id]-load[b.id];      // 한 명에게 몰리지 않게: 적게 맡은 사람 먼저
-      const oa=overallRate(a.id), ob=overallRate(b.id);
-      if(Math.abs(oa-ob)>1e-9) return oa-ob;                         // 전체 수행률 낮은 사람 먼저
+      const ra=projRate(a.id), rb=projRate(b.id);
+      if(Math.abs(ra-rb)>1e-9) return ra-rb;                         // 오늘 몫 포함해도 수행률 낮은 사람 먼저
       return 0;                                                      // 동점 → 랜덤
     })[0];
     slots.push(pick.id); load[pick.id]++;
@@ -529,7 +530,12 @@ function assignTasks(statuses){
   });
 
   let note=null;
-  if(available.length<=2) note = `근무가능 ${available.length}명 — 일부 인원이 2개 이상의 과제를 수행합니다.`;
+  const multi = available.filter(m=> load[m.id]>=2).sort((a,b)=> load[b.id]-load[a.id]);
+  if(multi.length){
+    note = multi.map(m=> `${m.name} ${load[m.id]}개`).join(', ') + ' — 수행률이 낮아 한 명이 여러 과제를 맡았습니다.';
+  } else if(available.length < TASKS.length){
+    note = `근무가능 ${available.length}명 — 일부 인원이 2개 이상의 과제를 수행합니다.`;
+  }
   return {assignment, available, reasons, note, load};
 }
 
