@@ -9,5 +9,19 @@
       "name": "이병 최인호"
     }
   ],
-  "history": []
+  "history": [
+    {
+      "id": 1787311356878,
+      "date": "2026-08-21",
+      "statuses": {
+        "m0": "available",
+        "m1": "available"
+      },
+      "assignments": {
+        "쓰레기통 비우기": "m1",
+        "청소기질": "m0",
+        "물걸레질": "m1"
+      }
+    }
+  ]
 }
